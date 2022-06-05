@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  develop:
+    build:
+      context: .
+      target: develop
+      dockerfile: Dockerfile.python
+    container_name: develop
+    volumes:
+      - ./app:/opt/app
+      - ./data/local:/opt/data
+    environment:
+      S3_USER: &s3_user docker_user
+      S3_PASSWORD: &s3_pass docker_pass
+      POSTGRES_USER: &db_user postgres_user
+      POSTGRES_PASSWORD: &db_pass postgres_pass
+
+  jupyter:
+    build:
+      context: .
+      target: jupyter
+      dockerfile: Dockerfile.python
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./app:/opt/app
+      - ./data/local:/opt/data
+    environment:
+      S3_USER: *s3_user
+      S3_PASSWORD: *s3_pass
+
+  s3:
+    image: minio/minio
+    container_name: s3
+    ports:
+      - "9000:9000"
+      - "9999:9999"
+    volumes:
+      - ./data/s3:/data
+    environment:
+      MINIO_ROOT_USER: docker_user
+      MINIO_ROOT_PASSWORD: docker_pass
+    command: server --address 0.0.0.0:9000 --console-address 0.0.0.0:9999 /data
+
+  db:
+    image: postgres:14.3-bullseye
+    container_name: db
+    volumes:
+      - ./data/db:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: *db_user
+      POSTGRES_PASSWORD: *db_pass
+      POSTGRES_DB: default_db
