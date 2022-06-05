@@ -1,0 +1,40 @@
+FROM python:3.10.4-slim-buster AS python_builder
+
+WORKDIR /opt/app
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc && \
+    pip install --upgrade pip
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY app .
+RUN pip install -e .[dev]
+
+
+FROM python:3.10.4-slim-buster AS develop
+
+COPY --from=python_builder /opt/venv /opt/venv
+COPY app /opt/app
+WORKDIR /opt/app
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+CMD [ "tail", "-f", "/dev/null" ]
+
+
+FROM python:3.10.4-slim-buster AS jupyter
+
+COPY --from=python_builder /opt/venv /opt/venv
+COPY app /opt/app
+WORKDIR /opt/
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+EXPOSE 8888
+
+CMD ["jupyter", "notebook", "--port=8888", "--no-browser", "--ip=0.0.0.0", "--allow-root"]
