@@ -4,6 +4,7 @@ import os
 import boto3
 import psycopg2
 from botocore.client import BaseClient
+from psycopg2._psycopg import connection
 
 S3_HOST = "http://s3:9000"
 DEFAULT_DB_POSTGRES = "default_db"
@@ -31,9 +32,7 @@ def s3_client(
     )
 
 
-def db_connection(
-    database: str, host: str, port: str = "5432"
-) -> psycopg2.connection:
+def db_connection(database: str, host: str, port: str = "5432") -> connection:
     return psycopg2.connect(
         database=database,
         user=os.getenv("POSTGRES_USER"),
